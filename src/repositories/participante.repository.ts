@@ -1,33 +1,11 @@
-import { Injectable } from '@nestjs/common';
-
-export interface ParticipanteComFrequencia {
-  id: string;
-  nome: string;
-  evento: string;
-  cargaHoraria: number;
-  frequencia: number;
-}
-
+import { Inject, Injectable } from '@nestjs/common';
+import Database from 'better-sqlite3';
+import { SQLITE } from '../database/database.module';
+export interface ParticipanteComFrequencia { id: string; nome: string; evento: string; cargaHoraria: number; frequencia: number }
 @Injectable()
 export class ParticipanteRepository {
-  private participantes: ParticipanteComFrequencia[] = [
-    {
-      id: 'p001',
-      nome: 'João Silva',
-      evento: 'TotalEventos 2026',
-      cargaHoraria: 20,
-      frequencia: 0.9,
-    },
-    {
-      id: 'p002',
-      nome: 'Maria Souza',
-      evento: 'TotalEventos 2026',
-      cargaHoraria: 20,
-      frequencia: 0.5,
-    },
-  ];
-
+  constructor(@Inject(SQLITE) private readonly db: Database.Database) {}
   buscarComFrequencia(id: string): ParticipanteComFrequencia | null {
-    return this.participantes.find((p) => p.id === id) ?? null;
+    return (this.db.prepare('SELECT id,nome,evento,carga_horaria cargaHoraria,frequencia FROM participantes WHERE id=?').get(id) as ParticipanteComFrequencia | undefined) ?? null;
   }
 }

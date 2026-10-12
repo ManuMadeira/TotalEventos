@@ -7,6 +7,7 @@ import { CriarReservaDto } from './dto/criar-reserva.dto';
 import { ReservaRepository } from '../../repositories/reserva.repository';
 import { SessaoRepository } from '../../repositories/sessao.repository';
 import { StatusReserva } from '../../enum/status-reserva.enum';
+import { emitirCodigoIngresso } from '../checkin/ingresso-token';
 
 @Injectable()
 export class ReservaService {
@@ -34,11 +35,18 @@ export class ReservaService {
       throw new ConflictException('Participante já possui reserva nesta sessão.');
     }
 
-    return this.reservaRepo.criar({
-      sessaoId: dto.sessaoId,
-      participanteId: dto.participanteId,
-      status: StatusReserva.ATIVA,
-      criadaEm: new Date(),
-    });
+    try {
+      const reserva = await this.reservaRepo.criar({
+        sessaoId: dto.sessaoId,
+        participanteId: dto.participanteId,
+        status: StatusReserva.ATIVA,
+        criadaEm: new Date(),
+      });
+      return { ...reserva, codigoIngresso: emitirCodigoIngresso(reserva.id) };
+    } catch (error) {
+      if (error instanceof Error && error.message === 'SESSAO_ESGOTADA') throw new ConflictException('Sessão esgotada (lotação máxima atingida).');
+      if (error instanceof Error && error.message === 'SESSAO_NAO_ENCONTRADA') throw new BadRequestException('Sessão não encontrada.');
+      throw new ConflictException('Participante já possui reserva nesta sessão.');
+    }
   }
 }
